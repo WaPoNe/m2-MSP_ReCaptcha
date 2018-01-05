@@ -28,6 +28,7 @@ MSP reCaptcha adds a recaptcha control to:
 - Register
 - Contact form
 - Forgot password
+- Email to a friend
 
 ### Standard reCaptcha v2
 

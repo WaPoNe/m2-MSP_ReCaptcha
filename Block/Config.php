@@ -60,6 +60,7 @@ class Config extends Template
                 'create' => $this->config->isEnabledFrontendCreate(),
                 'forgot' => $this->config->isEnabledFrontendForgot(),
                 'contact' => $this->config->isEnabledFrontendContact(),
+                'sendfriend' => $this->config->isEnabledFrontendSendfriend()
             ]
         ];
     }

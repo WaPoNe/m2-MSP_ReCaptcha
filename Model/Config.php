@@ -45,6 +45,7 @@ class Config
     const XML_PATH_ENABLED_FRONTEND_FORGOT = 'msp_securitysuite_recaptcha/frontend/enabled_forgot';
     const XML_PATH_ENABLED_FRONTEND_CONTACT = 'msp_securitysuite_recaptcha/frontend/enabled_contact';
     const XML_PATH_ENABLED_FRONTEND_CREATE = 'msp_securitysuite_recaptcha/frontend/enabled_create';
+    const XML_PATH_ENABLED_FRONTEND_SENDFRIEND = 'msp_securitysuite_recaptcha/frontend/enabled_sendfriend';
 
     /**
      * @var ScopeConfigInterface
@@ -159,6 +160,19 @@ class Config
         }
 
         return (bool) $this->scopeConfig->getValue(static::XML_PATH_ENABLED_FRONTEND_CREATE);
+    }
+
+    /**
+     * Return true if enabled on frontend send to a friend
+     * @return bool
+     */
+    public function isEnabledFrontendSendfriend()
+    {
+        if (!$this->isEnabledFrontend()) {
+            return false;
+        }
+
+        return (bool) $this->scopeConfig->getValue(static::XML_PATH_ENABLED_FRONTEND_SENDFRIEND);
     }
 
     /**
