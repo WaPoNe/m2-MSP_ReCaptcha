@@ -20,13 +20,16 @@
 
 namespace MSP\ReCaptcha\Observer\Frontend;
 
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
+use Magento\Framework\Json\DecoderInterface;
 use Magento\Framework\Json\EncoderInterface;
 use MSP\ReCaptcha\Api\ValidateInterface;
-use MSP\ReCaptcha\Helper\Data;
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Action\Action;
+use MSP\ReCaptcha\Model\Config;
 
 class AjaxLoginObserver implements ObserverInterface
 {
@@ -36,9 +39,9 @@ class AjaxLoginObserver implements ObserverInterface
     private $validate;
 
     /**
-     * @var Data
+     * @var Config
      */
-    private $helperData;
+    private $config;
 
     /**
      * @var ActionFlag
@@ -48,35 +51,75 @@ class AjaxLoginObserver implements ObserverInterface
     /**
      * @var EncoderInterface
      */
-    private $jsonEncoder;
+    private $encoder;
+
+    /**
+     * @var RemoteAddress
+     */
+    private $remoteAddress;
+
+    /**
+     * @var DecoderInterface
+     */
+    private $decoder;
 
     public function __construct(
         ValidateInterface $validate,
-        Data $helperData,
+        Config $config,
         ActionFlag $actionFlag,
-        EncoderInterface $jsonEncoder
+        EncoderInterface $encoder,
+        DecoderInterface $decoder,
+        RemoteAddress $remoteAddress
     ) {
 
         $this->validate = $validate;
-        $this->helperData = $helperData;
+        $this->config = $config;
         $this->actionFlag = $actionFlag;
-        $this->jsonEncoder = $jsonEncoder;
+        $this->encoder = $encoder;
+        $this->remoteAddress = $remoteAddress;
+        $this->decoder = $decoder;
+    }
+
+    /**
+     * Extract reCaptcha response from JSON body payload
+     * @param RequestInterface $request
+     * @return string
+     */
+    private function getReCaptchaResponse(RequestInterface $request)
+    {
+        if ($content = $request->getContent()) {
+            try {
+                $jsonParams = $this->decoder->decode($content);
+                if (isset($jsonParams['g-recaptcha-response'])) {
+                    return $jsonParams['g-recaptcha-response'];
+                }
+            } catch (\Exception $e) {
+                return '';
+            }
+        }
+
+        return '';
     }
 
     public function execute(Observer $observer)
     {
-        if (!$this->helperData->getEnabledFrontend()) {
+        if (!$this->config->isEnabledFrontendLogin()) {
             return;
         }
 
+        /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getControllerAction();
+        $request = $controller->getRequest();
 
-        if (!$this->validate->validate()) {
+        $reCaptchaResponse = $this->getReCaptchaResponse($request);
+        $remoteIp = $this->remoteAddress->getRemoteAddress();
+
+        if (!$this->validate->validate($reCaptchaResponse, $remoteIp)) {
             $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
             
-            $jsonPayload = $this->jsonEncoder->encode([
+            $jsonPayload = $this->encoder->encode([
                 'errors' => true,
-                'message' => $this->helperData->getErrorDescription(),
+                'message' => $this->config->getErrorDescription(),
             ]);
             $controller->getResponse()->representJson($jsonPayload);
         }

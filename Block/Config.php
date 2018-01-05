@@ -21,22 +21,27 @@
 namespace MSP\ReCaptcha\Block;
 
 use Magento\Framework\View\Element\Template;
-use MSP\ReCaptcha\Helper\Data;
 
 class Config extends Template
 {
     /**
-     * @var Data
+     * @var \MSP\ReCaptcha\Model\Config
      */
-    private $dataHelper;
+    private $config;
+
+    /**
+     * @var array
+     */
+    private $data;
 
     public function __construct(
         Template\Context $context,
-        Data $dataHelper,
+        \MSP\ReCaptcha\Model\Config $config,
         array $data = []
     ) {
         parent::__construct($context, $data);
-        $this->dataHelper = $dataHelper;
+        $this->config = $config;
+        $this->data = $data;
     }
 
     /**
@@ -46,8 +51,16 @@ class Config extends Template
     public function getCaptchaConfig()
     {
         return [
-            'siteKey' => $this->dataHelper->getPublicKey(),
-            'enabled' => $this->dataHelper->getEnabledFrontend(),
+            'siteKey' => $this->config->getPublicKey(),
+            'size' => $this->config->getFrontendSize(),
+            'badge' => $this->config->getFrontendPosition(),
+            'theme' => $this->config->getFrontendTheme(),
+            'enabled' => [
+                'login' => $this->config->isEnabledFrontendLogin(),
+                'create' => $this->config->isEnabledFrontendCreate(),
+                'forgot' => $this->config->isEnabledFrontendForgot(),
+                'contact' => $this->config->isEnabledFrontendContact(),
+            ]
         ];
     }
 }

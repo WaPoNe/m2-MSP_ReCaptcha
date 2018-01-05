@@ -22,11 +22,12 @@ namespace MSP\ReCaptcha\Observer\Adminhtml;
 
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use MSP\ReCaptcha\Api\ValidateInterface;
-use MSP\ReCaptcha\Helper\Data;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Action\Action;
+use MSP\ReCaptcha\Model\Config;
 
 class ForgotPasswordObserver implements ObserverInterface
 {
@@ -36,9 +37,9 @@ class ForgotPasswordObserver implements ObserverInterface
     private $validate;
 
     /**
-     * @var Data
+     * @var Config
      */
-    private $helperData;
+    private $config;
 
     /**
      * @var ManagerInterface
@@ -50,28 +51,41 @@ class ForgotPasswordObserver implements ObserverInterface
      */
     private $actionFlag;
 
+    /**
+     * @var RemoteAddress
+     */
+    private $remoteAddress;
+
     public function __construct(
         ValidateInterface $validate,
-        Data $helperData,
+        Config $config,
         ManagerInterface $messageManager,
-        ActionFlag $actionFlag
+        ActionFlag $actionFlag,
+        RemoteAddress $remoteAddress
     ) {
         $this->validate = $validate;
-        $this->helperData = $helperData;
+        $this->config = $config;
         $this->messageManager = $messageManager;
         $this->actionFlag = $actionFlag;
+        $this->remoteAddress = $remoteAddress;
     }
 
     public function execute(Observer $observer)
     {
-        if (!$this->helperData->getEnabledBackend()) {
+        if (!$this->config->isEnabledBackend()) {
             return;
         }
 
+        /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getControllerAction();
-        $email = (string)$observer->getControllerAction()->getRequest()->getParam('email');
+        $request = $controller->getRequest();
 
-        if (!$this->validate->validate() && $email) {
+        $reCaptchaResponse = $request->getParam(ValidateInterface::PARAM_RECAPTCHA_RESPONSE);
+        $remoteIp = $this->remoteAddress->getRemoteAddress();
+
+        $email = (string) $request->getParam('email');
+
+        if ($email && !$this->validate->validate($reCaptchaResponse, $remoteIp)) {
             $this->messageManager->addErrorMessage(__('Incorrect CAPTCHA'));
             $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
             $controller->getResponse()->setRedirect(

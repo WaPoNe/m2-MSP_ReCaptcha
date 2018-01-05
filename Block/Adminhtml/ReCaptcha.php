@@ -21,7 +21,7 @@
 namespace MSP\ReCaptcha\Block\Adminhtml;
 
 use Magento\Framework\View\Element\Template;
-use MSP\ReCaptcha\Helper\Data;
+use MSP\ReCaptcha\Model\Config;
 
 class ReCaptcha extends Template
 {
@@ -30,15 +30,19 @@ class ReCaptcha extends Template
      */
     private $data;
 
+    /**
+     * @var Config
+     */
+    private $config;
+
     public function __construct(
         Template\Context $context,
-        Data $dataHelper,
+        Config $config,
         array $data = []
     ) {
-        $this->dataHelper = $dataHelper;
-
         parent::__construct($context, $data);
         $this->data = $data;
+        $this->config = $config;
     }
 
     /**
@@ -47,7 +51,25 @@ class ReCaptcha extends Template
      */
     public function getPublicKey()
     {
-        return $this->dataHelper->getPublicKey();
+        return $this->config->getPublicKey();
+    }
+
+    /**
+     * Get backend theme
+     * @return string
+     */
+    public function getTheme()
+    {
+        return $this->config->getBackendTheme();
+    }
+
+    /**
+     * Get backend size
+     * @return string
+     */
+    public function getSize()
+    {
+        return $this->config->getBackendSize();
     }
 
     /**
@@ -56,6 +78,6 @@ class ReCaptcha extends Template
      */
     public function canDisplayCaptcha()
     {
-        return $this->dataHelper->getEnabledBackend();
+        return $this->config->isEnabledBackend();
     }
 }

@@ -22,11 +22,31 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
-        <msp_securitysuite>
-            <recaptcha>
-                <enabled_backend>0</enabled_backend>
-                <enabled_frontend>0</enabled_frontend>
-            </recaptcha>
-        </msp_securitysuite>
+        <msp_securitysuite_recaptcha>
+            <backend>
+                <enabled>0</enabled>
+                <size>normal</size>
+                <theme>light</theme>
+            </backend>
+            <frontend>
+                <enabled>0</enabled>
+                <size>normal</size>
+                <type>standard</type>
+                <position>inline</position>
+                <theme>light</theme>
+                <enabled_login>1</enabled_login>
+                <enabled_forgot>1</enabled_forgot>
+                <enabled_contact>1</enabled_contact>
+                <enabled_create>1</enabled_create>
+            </frontend>
+        </msp_securitysuite_recaptcha>
+        <dev>
+            <js>
+                <minify_exclude>
+                    google.com
+                    gstatic.com
+                </minify_exclude>
+            </js>
+        </dev>
     </default>
 </config>

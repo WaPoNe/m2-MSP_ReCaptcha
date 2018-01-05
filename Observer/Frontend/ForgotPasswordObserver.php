@@ -22,12 +22,13 @@ namespace MSP\ReCaptcha\Observer\Frontend;
 
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Framework\UrlInterface;
 use MSP\ReCaptcha\Api\ValidateInterface;
-use MSP\ReCaptcha\Helper\Data;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Action\Action;
+use MSP\ReCaptcha\Model\Config;
 
 class ForgotPasswordObserver implements ObserverInterface
 {
@@ -37,9 +38,9 @@ class ForgotPasswordObserver implements ObserverInterface
     private $validate;
 
     /**
-     * @var Data
+     * @var Config
      */
-    private $helperData;
+    private $config;
 
     /**
      * @var ManagerInterface
@@ -56,30 +57,42 @@ class ForgotPasswordObserver implements ObserverInterface
      */
     private $actionFlag;
 
+    /**
+     * @var RemoteAddress
+     */
+    private $remoteAddress;
+
     public function __construct(
         ValidateInterface $validate,
-        Data $helperData,
+        Config $config,
         ManagerInterface $messageManager,
         UrlInterface $url,
-        ActionFlag $actionFlag
+        ActionFlag $actionFlag,
+        RemoteAddress $remoteAddress
     ) {
         $this->validate = $validate;
-        $this->helperData = $helperData;
+        $this->config = $config;
         $this->messageManager = $messageManager;
         $this->url = $url;
         $this->actionFlag = $actionFlag;
+        $this->remoteAddress = $remoteAddress;
     }
 
     public function execute(Observer $observer)
     {
-        if (!$this->helperData->getEnabledFrontend()) {
+        if (!$this->config->isEnabledFrontendForgot()) {
             return;
         }
 
+        /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getControllerAction();
+        $request = $controller->getRequest();
 
-        if (!$this->validate->validate()) {
-            $this->messageManager->addErrorMessage($this->helperData->getErrorDescription());
+        $reCaptchaResponse = $request->getParam(ValidateInterface::PARAM_RECAPTCHA_RESPONSE);
+        $remoteIp = $this->remoteAddress->getRemoteAddress();
+
+        if (!$this->validate->validate($reCaptchaResponse, $remoteIp)) {
+            $this->messageManager->addErrorMessage($this->config->getErrorDescription());
             $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
 
             $url = $this->url->getUrl('*/*/forgotpassword', ['_secure' => true]);

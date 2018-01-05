@@ -18,40 +18,40 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
+namespace MSP\ReCaptcha\Model\Config\Source;
 
-namespace MSP\ReCaptcha\Block\Frontend;
-
-use Magento\Framework\View\Element\Template;
-use MSP\ReCaptcha\Model\Config;
-
-class ReCaptcha extends Template
+class Type implements \Magento\Framework\Option\ArrayInterface
 {
-    /**
-     * @var Config
-     */
-    private $config;
+    const TYPE_RECAPTCHA = 'recaptcha';
+    const TYPE_INVISIBLE = 'invisible';
 
     /**
-     * @var array
+     * Options getter
+     *
+     * @return array
      */
-    private $data;
-
-    public function __construct(
-        Template\Context $context,
-        Config $config,
-        array $data = []
-    ) {
-        parent::__construct($context, $data);
-        $this->config = $config;
-        $this->data = $data;
+    public function toOptionArray()
+    {
+        return [
+            ['value' => 'recaptcha', 'label' => __('reCaptcha v2')],
+            ['value' => 'invisible', 'label' => __('Invisible reCaptcha')],
+        ];
     }
 
     /**
-     * Get public reCaptcha key
-     * @return string
+     * Get options in "key-value" format
+     *
+     * @return array
      */
-    public function getPublicKey()
+    public function toArray()
     {
-        return $this->config->getPublicKey();
+        $options = $this->toOptionArray();
+        $return = [];
+
+        foreach ($options as $option) {
+            $return[$option['value']] = $option['label'];
+        }
+
+        return $return;
     }
 }

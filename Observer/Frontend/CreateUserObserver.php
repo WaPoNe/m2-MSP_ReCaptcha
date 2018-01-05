@@ -23,12 +23,13 @@ namespace MSP\ReCaptcha\Observer\Frontend;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Customer\Model\Session;
+use Magento\Framework\HTTP\PhpEnvironment\RemoteAddress;
 use Magento\Framework\UrlInterface;
 use MSP\ReCaptcha\Api\ValidateInterface;
-use MSP\ReCaptcha\Helper\Data;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\Action\Action;
+use MSP\ReCaptcha\Model\Config;
 
 class CreateUserObserver implements ObserverInterface
 {
@@ -38,9 +39,9 @@ class CreateUserObserver implements ObserverInterface
     private $validate;
 
     /**
-     * @var Data
+     * @var Config
      */
-    private $helperData;
+    private $config;
 
     /**
      * @var ManagerInterface
@@ -62,35 +63,48 @@ class CreateUserObserver implements ObserverInterface
      */
     private $url;
 
+    /**
+     * @var RemoteAddress
+     */
+    private $remoteAddress;
+
     public function __construct(
         ValidateInterface $validate,
-        Data $helperData,
+        Config $config,
         ManagerInterface $messageManager,
         Session $customerSession,
         ActionFlag $actionFlag,
-        UrlInterface $url
+        UrlInterface $url,
+        RemoteAddress $remoteAddress
     ) {
 
         $this->validate = $validate;
-        $this->helperData = $helperData;
+        $this->config = $config;
         $this->messageManager = $messageManager;
         $this->customerSession = $customerSession;
         $this->actionFlag = $actionFlag;
         $this->url = $url;
+        $this->remoteAddress = $remoteAddress;
     }
 
     public function execute(Observer $observer)
     {
-        if (!$this->helperData->getEnabledFrontend()) {
+        if (!$this->config->isEnabledFrontendCreate()) {
             return;
         }
 
+        /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getControllerAction();
-        if (!$this->validate->validate()) {
-            $this->messageManager->addErrorMessage($this->helperData->getErrorDescription());
+        $request = $controller->getRequest();
+
+        $reCaptchaResponse = $request->getParam(ValidateInterface::PARAM_RECAPTCHA_RESPONSE);
+        $remoteIp = $this->remoteAddress->getRemoteAddress();
+
+        if (!$this->validate->validate($reCaptchaResponse, $remoteIp)) {
+            $this->messageManager->addErrorMessage($this->config->getErrorDescription());
             $this->actionFlag->set('', Action::FLAG_NO_DISPATCH, true);
 
-            $this->customerSession->setCustomerFormData($controller->getRequest()->getPostValue());
+            $this->customerSession->setCustomerFormData($request->getPostValue());
 
             $url = $this->url->getUrl('*/*/create', ['_secure' => true]);
 

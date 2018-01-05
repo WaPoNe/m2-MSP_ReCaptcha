@@ -18,16 +18,37 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
-/** @var $block MSP\ReCaptcha\Block\Frontend\ReCaptcha */
-?>
-<div class="field-recaptcha" id="msp-recaptcha-container" data-bind="scope:'msp-recaptcha'">
-    <!-- ko template: getTemplate() --><!-- /ko -->
-</div>
+namespace MSP\ReCaptcha\Model\Config\Source;
 
-<script type="text/x-magento-init">
+class Theme implements \Magento\Framework\Option\ArrayInterface
 {
-    "#msp-recaptcha-container": {
-        "Magento_Ui/js/core/app": <?php /* @escapeNotVerified */ echo $block->getJsLayout();?>
+    /**
+     * Options getter
+     *
+     * @return array
+     */
+    public function toOptionArray()
+    {
+        return [
+            ['value' => 'light', 'label' => __('Light Theme')],
+            ['value' => 'dark', 'label' => __('Dark Theme')],
+        ];
+    }
+
+    /**
+     * Get options in "key-value" format
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        $options = $this->toOptionArray();
+        $return = [];
+
+        foreach ($options as $option) {
+            $return[$option['value']] = $option['label'];
+        }
+
+        return $return;
     }
 }
-</script>
